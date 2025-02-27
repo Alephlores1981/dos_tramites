@@ -15,7 +15,6 @@
 <?php endif; ?>
 
 <form action="<?= base_url('tramites/'.$tramite['id']) ?>" method="post">
-    <!-- Muy importante para simular PUT -->
     <input type="hidden" name="_method" value="PUT">
 
     <!-- Afiliado -->

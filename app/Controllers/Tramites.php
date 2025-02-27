@@ -182,4 +182,54 @@ class Tramites extends ResourceController
 
         return redirect()->to('/tramites')->with('message', 'Trámite eliminado correctamente.');
     }
+    public function show($id = null)
+{
+    // 1) Buscar el trámite principal
+    $tramite = $this->model->find($id);
+    if (! $tramite) {
+        return redirect()->to('/tramites')->with('error', 'Trámite no encontrado');
+    }
+
+    // 2) Cargar info adicional si deseas (JOIN afiliados, etc.)
+    // 3) Cargar el historial de instancias
+    $db = db_connect(); // O $this->model->db
+    $historial = $db->table('tramites_historial th')
+                    ->select('th.*, i.nombre AS instancia_nombre')
+                    ->join('instancias i', 'i.id = th.instancia_id')
+                    ->where('th.tramite_id', $id)
+                    ->orderBy('th.fecha_cambio', 'ASC')
+                    ->get()->getResultArray();
+
+    // 4) Pasar todo a la vista
+    $data['tramite'] = $tramite;
+    $data['historial'] = $historial;
+
+    return view('tramites/show', $data);
+}
+public function agregarInstancia($id)
+{
+    // Validar que el trámite existe
+    $tramite = $this->model->find($id);
+    if (! $tramite) {
+        return redirect()->to('/tramites')->with('error', 'Trámite no existe');
+    }
+
+    // Recoges la instancia_id
+    $instanciaId = $this->request->getPost('instancia_id');
+    $observ = $this->request->getPost('observaciones');
+
+    // Insertar en 'tramites_historial'
+    $db = db_connect();
+    $db->table('tramites_historial')->insert([
+        'tramite_id'     => $id,
+        'instancia_id'   => $instanciaId,
+        'fecha_cambio'   => date('Y-m-d H:i:s'),
+        'observaciones'  => $observ,
+        'usuario_cambio' => 'admin' // o de la sesión
+    ]);
+
+    return redirect()->to('/tramites/'.$id)
+                     ->with('message', 'Nueva instancia agregada');
+}
+
 }
